@@ -1,0 +1,12 @@
+{
+  "name": "Elm",
+  "version": "0.1.0",
+  "main": "main.html",
+  "window": {
+    "title": "Untitled",
+    "icon": "logo.png",
+    "toolbar": false,
+    "width": 960,
+    "height": 640
+  }
+}
