@@ -32,11 +32,11 @@
   function setContents(contents) {
     fileContents = contents;
     editor.setValue(contents);
+    clearTimeout(delay);
     if (contents) {
       compile();
     } else {
       output.location = 'http://elm-lang.org/compile?input=main%20%3D%20plainText%20%22%22';
-      clearTimeout(delay);
     }
   }
 
