@@ -100,8 +100,10 @@
     var t = e.target;
     while (t) {
       if (t.tagName === 'A') {
-        e.preventDefault();
-        showDocs(t.href.replace(/^file:\/\//, 'http://elm-lang.org'));
+        if (!/^javascript:/.test(t.href)) {
+          e.preventDefault();
+          showDocs(t.href.replace(/^file:\/\//, 'http://elm-lang.org'));
+        }
         return;
       }
       t = t.parentNode;
