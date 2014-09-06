@@ -17,16 +17,22 @@ function hotSwap() {
             && request.status < 300) {
             var result = JSON.parse(request.responseText);
             var top = self.parent;
-            if (js = result.success) {
+            var js = result.success;
+            if (js) {
                 var error = top.output.document.getElementById('ErrorMessage');
                 if (error) {
                     error.parentNode.removeChild(error);
                 }
                 top.output.eval(js);
-                var module = js.substring(0,js.indexOf('=')).replace(/\s/g,'');
-                top.output.runningElmModule =
-                    top.output.runningElmModule.swap(top.output.eval(module));
-            } else {
+                var module = js.substring(0, js.indexOf('=')).replace(/\s/g,'');
+                try {
+                    top.output.runningElmModule =
+                        top.output.runningElmModule.swap(top.output.eval(module));
+                } catch (e) {
+                    result.error = e.message;
+                }
+            }
+            if (result.error) {
                 var error = top.output.document.getElementById('ErrorMessage');
                 if (!error) {
                     error = document.createElement('div');
