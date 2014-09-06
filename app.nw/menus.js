@@ -64,7 +64,6 @@
   }
 
   function open(path) {
-    console.log(path);
     setPath(path);
     setTimeout(function() {
       var data = fs.readFileSync(path, {encoding: 'utf8'});
