@@ -10,10 +10,15 @@
   var output = top.output;
 
   var currentWin = win;
-  function focusWin(w) {
+  function focusWin(w, initDoc) {
     currentWin = w;
     backMenuItem.enabled =
     forwardMenuItem.enabled = w === docWin;
+    updateFullScreenLabel(initDoc);
+  }
+
+  function updateFullScreenLabel(initDoc) {
+    fullScreenMenuItem.label = !initDoc && currentWin.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
   }
 
   var filePath = '';
@@ -121,7 +126,7 @@
       docWin.menu = mb;
     }
 
-    focusWin(docWin);
+    focusWin(docWin, true);
     docWin.on('close', function() {
       docWin.hide();
       win.focus();
@@ -229,10 +234,10 @@
     key: 'f',
     modifiers: 'cmd-ctrl',
     click: function() {
-      win.isFullscreen = !win.isFullscreen;
-      fullScreenMenuItem.label = win.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
+      currentWin.isFullscreen = !currentWin.isFullscreen;
+      updateFullScreenLabel();
     }
-  })
+  });
   viewMenu.append(fullScreenMenuItem);
   viewMenu.append(new gui.MenuItem({type: 'separator'}));
   var backMenuItem = new gui.MenuItem({
