@@ -285,6 +285,7 @@ function updateDocumentation() {
     boxes[1].innerHTML = message.extra;
     boxes[1].style.display = mode.verbose && message.extra ? 'block' : 'none';
     adjustView(mode);
+    if (window.updateHintLabel) updateHintLabel(message.extra, mode.verbose);
 }
 
 var Mode = { OPTIONS:0, TYPES:1, NONE:2 };
@@ -484,7 +485,6 @@ function initEditor() {
           extraKeys: {
               'Ctrl-Enter': compile,
               'Shift-Ctrl-Enter': hotSwap,
-              'Ctrl-H': toggleVerbose,
               'Tab': function(cm) {
                   var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
                   cm.replaceSelection(spaces, "end", "+input");

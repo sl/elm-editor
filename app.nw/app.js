@@ -428,6 +428,18 @@
     });
     viewMenu.append(fullScreenMenuItem);
     viewMenu.append(new gui.MenuItem({type: 'separator'}));
+    var hintMenuItem = new gui.MenuItem({
+      label: 'Expand Hint',
+      key: 'H',
+      enabled: false,
+      click: toggleVerbose
+    });
+    window.updateHintLabel = function(available, verbose) {
+      hintMenuItem.enabled = available;
+      hintMenuItem.label = available && verbose ? 'Collapse Hint' : 'Expand Hint';
+    };
+    viewMenu.append(hintMenuItem);
+    viewMenu.append(new gui.MenuItem({type: 'separator'}));
     var backMenuItem = new gui.MenuItem({
       label: 'Back',
       // NSLeftArrowFunctionKey
