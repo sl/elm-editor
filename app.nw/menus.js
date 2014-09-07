@@ -197,7 +197,8 @@
 
       var fileMenu = new gui.Menu;
       fileMenu.append(new gui.MenuItem({
-        label: 'Close Window',
+        // label: 'Close Window',
+        label: 'Close',
         key: 'W',
         modifiers: 'ctrl',
         click: function() {
@@ -364,7 +365,8 @@
       fileMenu.append(closeMenuItem);
     } else {
       fileMenu.append(new gui.MenuItem({
-        label: 'Close Window',
+        // label: 'Close Window',
+        label: 'Close',
         key: 'W',
         modifiers: 'ctrl',
         click: function() {
