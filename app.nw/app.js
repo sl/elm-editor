@@ -287,6 +287,26 @@
     }
   });
 
+  function hideCursor() {
+    editor.display.wrapper.classList.remove('CodeMirror-focused');
+  }
+  function showCursor() {
+    editor.display.wrapper.classList.add('CodeMirror-focused');
+  }
+  var editorFocused = true;
+  editor.display.input.addEventListener('blur', function() {
+    editorFocused = false;
+    hideCursor();
+  });
+  editor.display.input.addEventListener('focus', function() {
+    editorFocused = true;
+    showCursor();
+  });
+  win.on('blur', hideCursor);
+  win.on('focus', function() {
+    if (editorFocused) showCursor();
+  });
+
   if (isMain) {
     win.on('close', function() {
       if (!shouldClose()) return;
