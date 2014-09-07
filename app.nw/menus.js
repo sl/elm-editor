@@ -119,7 +119,9 @@
   });
 
   var mb = new gui.Menu({type: 'menubar'});
-  mb.createMacBuiltin('Elm');
+  if (isMac) {
+    mb.createMacBuiltin('Elm');
+  }
 
   var fileMenu = new gui.Menu;
   fileMenu.append(new gui.MenuItem({
