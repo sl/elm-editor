@@ -480,6 +480,26 @@
       windowMenu.insert(zoomMenuItem, 1);
     }
 
+    var projectMenu = new gui.Menu;
+    projectMenu.append(new gui.MenuItem({
+      label: 'Compile',
+      key: isMac ? '\r' : 'ENTER',
+      modifiers: isMac ? 'cmd' : 'ctrl',
+      click: compile
+    }));
+    projectMenu.append(new gui.MenuItem({
+      label: 'Hot Swap',
+      key: isMac ? '\r' : 'RETURN',
+      modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
+      click: hotSwap
+    }));
+    var projectMenuItem = new gui.MenuItem({label: 'Project', submenu: projectMenu});
+    if (isMac) {
+      mb.insert(projectMenuItem, 4);
+    } else {
+      mb.append(projectMenuItem);
+    }
+
     var helpMenu = new gui.Menu;
     mb.append(new gui.MenuItem({label: 'Help', submenu: helpMenu}));
     addDocumentationItems(helpMenu);
