@@ -190,7 +190,7 @@
   fileMenu.append(new gui.MenuItem({
     label: 'New',
     key: isMac ? 'n' : 'N',
-    modifiers: isMac ? '' : 'ctrl',
+    modifiers: isMac ? 'cmd' : 'ctrl',
     click: function() {
       if (!shouldClose()) return;
       setPath('');
@@ -200,7 +200,7 @@
   fileMenu.append(new gui.MenuItem({
     label: 'Open\u2026',
     key: isMac ? 'o' : 'O',
-    modifiers: isMac ? '' : 'ctrl',
+    modifiers: isMac ? 'cmd' : 'ctrl',
     click: function() {
       if (!shouldClose()) return;
       var dialog = document.createElement('input');
@@ -216,7 +216,7 @@
   fileMenu.append(new gui.MenuItem({
     label: 'Save',
     key: isMac ? 's' : 'S',
-    modifiers: isMac ? '' : 'ctrl',
+    modifiers: isMac ? 'cmd' : 'ctrl',
     click: function() {
       if (filePath) {
         save();
@@ -228,7 +228,7 @@
   fileMenu.append(new gui.MenuItem({
     label: 'Save As\u2026',
     key: 'S',
-    modifiers: isMac ? '' : 'ctrl-shift',
+    modifiers: isMac ? 'cmd' : 'ctrl-shift',
     click: function() {
       saveAs();
     }
