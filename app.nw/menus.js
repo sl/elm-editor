@@ -323,4 +323,13 @@
 
   win.menu = mb;
 
+  if (gui.App.argv.length) {
+    open(gui.App.argv[0]);
+  }
+
+  gui.App.on('open', function(file) {
+    if (!shouldClose()) return;
+    open(file);
+  });
+
 }());
