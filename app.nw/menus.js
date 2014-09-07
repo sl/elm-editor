@@ -81,6 +81,7 @@
     }
     docWin = gui.Window.open(url, {
       position: 'center',
+      icon: 'logo.png',
       focus: true,
       width: 960,
       height: 720
