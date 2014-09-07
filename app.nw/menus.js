@@ -36,6 +36,14 @@
     updateFullScreenLabel(initDoc);
   }
 
+  function focusOpenWin() {
+    if (windows.length) {
+      windows[0].focus();
+    } else {
+      focusWin(null);
+    }
+  }
+
   function updateFullScreenLabel(initDoc) {
     if (isMac) fullScreenMenuItem.enabled = !!currentWin;
     fullScreenMenuItem.label = !initDoc && currentWin && currentWin.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
@@ -237,11 +245,7 @@
       docWin.hide();
       docWin.closeDevTools();
       windows.splice(windows.indexOf(docWin), 1);
-      if (windows.length) {
-        windows[0].focus();
-      } else {
-        focusWin(null);
-      }
+      focusOpenWin();
       // docWin = null;
       // this.close(true);
     });
@@ -290,7 +294,7 @@
       win.closeDevTools();
       windows.splice(windows.indexOf(win), 1);
       editorWindows.splice(editorWindows.indexOf(win), 1);
-      focusWin(windows[0]);
+      focusOpenWin();
     });
     win.on('focus', function() {
       focusWin(win);
