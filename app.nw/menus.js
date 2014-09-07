@@ -113,6 +113,7 @@
     focusWin(docWin);
     docWin.on('close', function() {
       docWin.hide();
+      win.focus();
       // docWin = null;
       // this.close(true);
     });
