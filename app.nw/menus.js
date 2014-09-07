@@ -86,6 +86,30 @@
       width: 960,
       height: 720
     });
+
+    if (!isMac) {
+      var mb = new gui.Menu({type: 'menubar'});
+      var viewMenu = new gui.Menu;
+      viewMenu.append(backMenuItem);
+      viewMenu.append(forwardMenuItem);
+      viewMenu.append(new gui.MenuItem({type: 'separator'}));
+      viewMenu.append(new gui.MenuItem({
+        label: 'Show Developer Tools',
+        key: 'i',
+        modifiers: 'ctrl-shift',
+        click: function() {
+          docWin.showDevTools();
+        }
+      }));
+      mb.append(new gui.MenuItem({label: 'View', submenu: viewMenu}));
+
+      var goMenu = new gui.Menu;
+      addDocumentationItems(goMenu);
+      mb.append(new gui.MenuItem({label: 'Go', submenu: goMenu}));
+
+      docWin.menu = mb;
+    }
+
     focusWin(docWin);
     docWin.on('close', function() {
       docWin.hide();
@@ -96,6 +120,24 @@
       focusWin(docWin);
     });
   }
+
+  function addDocumentationItems(menu) {
+    menu.append(new gui.MenuItem({
+      label: 'Documentation',
+      key: 'D',
+      click: function() {
+        showDocs('http://elm-lang.org/Learn.elm');
+      }
+    }));
+    menu.append(new gui.MenuItem({
+      label: 'Standard Libraries',
+      key: 'L',
+      click: function() {
+        showDocs('http://library.elm-lang.org/catalog/elm-lang-Elm/0.12.3/');
+      }
+    }));
+  }
+
   document.getElementById('documentation').addEventListener('click', function(e) {
     var t = e.target;
     while (t) {
@@ -201,9 +243,11 @@
       if (currentWin === docWin) docWin.window.history.go(1);
     }
   });
-  viewMenu.append(backMenuItem);
-  viewMenu.append(forwardMenuItem);
-  viewMenu.append(new gui.MenuItem({type: 'separator'}));
+  if (isMac) {
+    viewMenu.append(backMenuItem);
+    viewMenu.append(forwardMenuItem);
+    viewMenu.append(new gui.MenuItem({type: 'separator'}));
+  }
   viewMenu.append(new gui.MenuItem({
     label: 'Show Developer Tools',
     key: 'i',
@@ -232,20 +276,7 @@
   }
   var helpMenu = new gui.Menu;
   mb.append(new gui.MenuItem({label: 'Help', submenu: helpMenu}));
-  helpMenu.append(new gui.MenuItem({
-    label: 'Documentation',
-    key: 'D',
-    click: function() {
-      showDocs('http://elm-lang.org/Learn.elm');
-    }
-  }));
-  helpMenu.append(new gui.MenuItem({
-    label: 'Standard Libraries',
-    key: 'L',
-    click: function() {
-      showDocs('http://library.elm-lang.org/catalog/elm-lang-Elm/0.12.3/');
-    }
-  }));
+  addDocumentationItems(helpMenu);
 
   win.menu = mb;
 
