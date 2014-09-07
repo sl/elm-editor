@@ -98,7 +98,8 @@
       var fileMenu = new gui.Menu;
       fileMenu.append(new gui.MenuItem({
         label: 'Close Window',
-        key: 'w',
+        key: 'W',
+        modifiers: 'ctrl',
         click: function() {
           docWin.close();
         }
@@ -111,7 +112,7 @@
       viewMenu.append(new gui.MenuItem({type: 'separator'}));
       viewMenu.append(new gui.MenuItem({
         label: 'Show Developer Tools',
-        key: 'i',
+        key: 'I',
         modifiers: 'ctrl-shift',
         click: function() {
           docWin.showDevTools();
@@ -142,6 +143,7 @@
     menu.append(new gui.MenuItem({
       label: 'Documentation',
       key: 'D',
+      modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
       click: function() {
         showDocs('http://elm-lang.org/Learn.elm');
       }
@@ -149,6 +151,7 @@
     menu.append(new gui.MenuItem({
       label: 'Standard Libraries',
       key: 'L',
+      modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
       click: function() {
         showDocs('http://library.elm-lang.org/catalog/elm-lang-Elm/0.12.3/');
       }
@@ -186,7 +189,8 @@
   var fileMenu = new gui.Menu;
   fileMenu.append(new gui.MenuItem({
     label: 'New',
-    key: 'n',
+    key: isMac ? 'n' : 'N',
+    modifiers: isMac ? '' : 'ctrl',
     click: function() {
       if (!shouldClose()) return;
       setPath('');
@@ -195,7 +199,8 @@
   }));
   fileMenu.append(new gui.MenuItem({
     label: 'Open\u2026',
-    key: 'o',
+    key: isMac ? 'o' : 'O',
+    modifiers: isMac ? '' : 'ctrl',
     click: function() {
       if (!shouldClose()) return;
       var dialog = document.createElement('input');
@@ -210,7 +215,8 @@
   }));
   fileMenu.append(new gui.MenuItem({
     label: 'Save',
-    key: 's',
+    key: isMac ? 's' : 'S',
+    modifiers: isMac ? '' : 'ctrl',
     click: function() {
       if (filePath) {
         save();
@@ -222,17 +228,23 @@
   fileMenu.append(new gui.MenuItem({
     label: 'Save As\u2026',
     key: 'S',
+    modifiers: isMac ? '' : 'ctrl-shift',
     click: function() {
       saveAs();
     }
   }));
-  mb.insert(new gui.MenuItem({label: 'File', submenu: fileMenu}), isMac ? 1 : 0);
+  var fileMenuItem = new gui.MenuItem({label: 'File', submenu: fileMenu});
+  if (isMac) {
+    mb.insert(fileMenuItem, 1);
+  } else {
+    mb.append(fileMenuItem);
+  }
 
   var viewMenu = new gui.Menu;
   var fullScreenMenuItem = new gui.MenuItem({
     label: 'Enter Full Screen',
-    key: 'f',
-    modifiers: 'cmd-ctrl',
+    key: isMac ? 'f' : 'F11',
+    modifiers: isMac ? 'cmd-ctrl' : '',
     click: function() {
       currentWin.isFullscreen = !currentWin.isFullscreen;
       updateFullScreenLabel();
@@ -273,8 +285,12 @@
       currentWin.showDevTools();
     }
   }));
-
-  mb.insert(new gui.MenuItem({label: 'View', submenu: viewMenu}), isMac ? 3 : 1);
+  var viewMenuItem = new gui.MenuItem({label: 'View', submenu: viewMenu});
+  if (isMac) {
+    mb.insert(viewMenuItem, 3);
+  } else {
+    mb.append(viewMenuItem);
+  }
 
   if (isMac) {
     var windowMenu = mb.items[4].submenu;
@@ -294,7 +310,8 @@
     fileMenu.append(new gui.MenuItem({type: 'separator'}));
     fileMenu.append(new gui.MenuItem({
       label: 'Quit',
-      key: 'q',
+      key: 'Q',
+      modifiers: 'ctrl',
       click: function() {
         win.close();
       }
