@@ -89,6 +89,17 @@
 
     if (!isMac) {
       var mb = new gui.Menu({type: 'menubar'});
+
+      var fileMenu = new gui.Menu;
+      fileMenu.append(new gui.MenuItem({
+        label: 'Close Window',
+        key: 'w',
+        click: function() {
+          docWin.close();
+        }
+      }));
+      mb.append(new gui.MenuItem({label: 'File', submenu: fileMenu}));
+
       var viewMenu = new gui.Menu;
       viewMenu.append(backMenuItem);
       viewMenu.append(forwardMenuItem);
@@ -273,6 +284,15 @@
       label: 'Close',
       key: 'w',
       selector: 'performClose:'
+    }));
+  } else {
+    fileMenu.append(new gui.MenuItem({type: 'separator'}));
+    fileMenu.append(new gui.MenuItem({
+      label: 'Quit',
+      key: 'q',
+      click: function() {
+        win.close();
+      }
     }));
   }
   var helpMenu = new gui.Menu;
