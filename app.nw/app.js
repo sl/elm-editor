@@ -432,6 +432,7 @@
       label: 'Expand Hint',
       key: 'H',
       enabled: false,
+      modifiers: isMac ? 'cmd-shift' : 'ctrl',
       click: toggleVerbose
     });
     window.updateHintLabel = function(available, verbose) {
