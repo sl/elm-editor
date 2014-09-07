@@ -23,7 +23,7 @@
     if (!w && !isMac) {
       process.exit(0);
     }
-    if (isMac && isMain) {
+    if (isMac) {
       backMenuItem.enabled =
       forwardMenuItem.enabled = w && w === docWin;
       saveMenuItem.enabled =
