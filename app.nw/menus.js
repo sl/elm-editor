@@ -20,6 +20,9 @@
   var currentWin = win;
   function focusWin(w, initDoc) {
     currentWin = w;
+    if (!w && !isMac) {
+      process.exit(0);
+    }
     if (isMac && isMain) {
       backMenuItem.enabled =
       forwardMenuItem.enabled = w && w === docWin;
