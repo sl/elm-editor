@@ -459,13 +459,16 @@
   }
 
   if (isMain) {
-    if (gui.App.argv.length) {
-      open(gui.App.argv[0]);
+    var argv = gui.App.argv;
+    if (argv.length) {
+      open(argv[0]);
+      for (var i = 1, l = argv.length; i < l; i++) {
+        openWindow(argv[i]);
+      }
     }
 
     gui.App.on('open', function(file) {
-      if (!shouldClose()) return;
-      open(file);
+      openWindow(file);
     });
   }
 
