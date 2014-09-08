@@ -56,7 +56,7 @@
   function updateFileMenuItems(enable) {
     compileMenuItem.enabled =
     hotSwapMenuItem.enabled = !!enable;
-    if (typeof enable === 'object') {
+    if (enable && typeof enable === 'object') {
       updateHintMenuItem(enable.hintAvailable, enable.hintVerbose);
     } else {
       updateHintMenuItem(false, false);
