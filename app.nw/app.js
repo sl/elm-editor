@@ -35,7 +35,7 @@
       showDevToolsMenuItem.enabled =
       zoomMenuItem.enabled =
       minimizeMenuItem.enabled = w;
-      updateProjectMenuItems(init ? !initDoc : w && w.window.ElmEditor && w.window.ElmEditor.getSelectedFile());
+      updateFileMenuItems(init ? !initDoc : w && w.window.ElmEditor && w.window.ElmEditor.getSelectedFile());
     }
     updateFullScreenLabel(init);
   }
@@ -53,9 +53,19 @@
     fullScreenMenuItem.label = !init && currentWin && currentWin.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
   }
 
-  function updateProjectMenuItems(enable) {
+  function updateFileMenuItems(enable) {
     compileMenuItem.enabled =
     hotSwapMenuItem.enabled = !!enable;
+    if (typeof enable === 'object') {
+      updateHintMenuItem(enable.hintAvailable, enable.hintVerbose);
+    } else {
+      updateHintMenuItem(false, false);
+    }
+  }
+
+  function updateHintMenuItem(available, verbose) {
+    hintMenuItem.enabled = available;
+    hintMenuItem.label = available && verbose ? 'Collapse Hint' : 'Expand Hint';
   }
 
   function shouldClose() {
@@ -186,8 +196,12 @@
     hotSwap: function() {
       if (selectedFile) selectedFile.hotSwap();
     },
+    toggleVerbose: function() {
+      if (selectedFile) selectedFile.toggleVerbose();
+    },
     shouldClose: shouldClose,
-    updateProjectMenuItems: updateProjectMenuItems,
+    updateFileMenuItems: updateFileMenuItems,
+    updateHintMenuItem: updateHintMenuItem,
     addFile: addFile,
     openWindow: openWindow,
     open: open,
@@ -422,12 +436,8 @@
       key: 'H',
       enabled: false,
       modifiers: isMac ? 'cmd-shift' : 'ctrl',
-      // click: toggleVerbose
+      click: editorCommand('toggleVerbose')
     });
-    window.updateHintLabel = function(available, verbose) {
-      hintMenuItem.enabled = available;
-      hintMenuItem.label = available && verbose ? 'Collapse Hint' : 'Expand Hint';
-    };
     viewMenu.append(hintMenuItem);
     viewMenu.append(new gui.MenuItem({type: 'separator'}));
     var backMenuItem = new gui.MenuItem({
@@ -548,9 +558,9 @@
       file.focus();
     }
     if (isMain || !isMac) {
-      updateProjectMenuItems(file);
+      updateFileMenuItems(file);
     } else {
-      main.window.ElmEditor.updateProjectMenuItems(file);
+      main.window.ElmEditor.updateFileMenuItems(file);
     }
     updateTitle();
   }
@@ -603,6 +613,7 @@
       this.editor.display.input.addEventListener('focus', this.onEditorBlur.bind(this));
 
       this.window.document.getElementById('documentation').addEventListener('click', this.onDocumentationClick);
+      this.window.updateHint = this.updateHint.bind(this);
 
       if (path) {
         var data = fs.readFileSync(path, {encoding: 'utf8'});
@@ -651,6 +662,16 @@
     }
   };
 
+  File.prototype.updateHint = function(available, verbose) {
+    this.hintAvailable = !!available;
+    this.hintVerbose = !!verbose;
+    if (isMac) {
+      main.window.ElmEditor.updateHintMenuItem(this.hintAvailable, this.hintVerbose);
+    } else {
+      updateHintMenuItem(this.hintAvailable, this.hintVerbose);
+    }
+  };
+
   File.prototype.compile = function() {
     if (this.window.compile) this.window.compile();
   };
@@ -658,6 +679,10 @@
   File.prototype.hotSwap = function() {
     if (this.window.hotSwap) this.window.hotSwap();
   };
+
+  File.prototype.toggleVerbose = function() {
+    if (this.window.toggleVerbose) this.window.toggleVerbose();
+  }
 
   File.prototype.save = function() {
     if (this.path) {

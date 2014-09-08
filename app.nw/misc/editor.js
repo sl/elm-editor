@@ -286,7 +286,7 @@ function updateDocumentation() {
     boxes[1].innerHTML = message.extra;
     boxes[1].style.display = mode.verbose && message.extra ? 'block' : 'none';
     adjustView(mode);
-    if (window.updateHintLabel) updateHintLabel(message.extra, mode.verbose);
+    if (window.updateHint) updateHint(message.extra, mode.verbose);
 }
 
 var Mode = { OPTIONS:0, TYPES:1, NONE:2 };
