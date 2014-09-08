@@ -180,6 +180,12 @@
     getSelectedFile: function() {
       return selectedFile;
     },
+    compile: function() {
+      if (selectedFile) selectedFile.compile();
+    },
+    hotSwap: function() {
+      if (selectedFile) selectedFile.hotSwap();
+    },
     shouldClose: shouldClose,
     updateProjectMenuItems: updateProjectMenuItems,
     addFile: addFile,
@@ -497,9 +503,7 @@
       key: isMac ? '\r' : 'ENTER',
       modifiers: isMac ? 'cmd' : 'ctrl',
       enabled: false,
-      click: function() {
-        if (selectedFile) selectedFile.compile();
-      }
+      click: editorCommand('compile')
     });
     projectMenu.append(compileMenuItem);
     var hotSwapMenuItem = new gui.MenuItem({
@@ -507,9 +511,7 @@
       key: isMac ? '\r' : 'RETURN',
       modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
       enabled: false,
-      click: function() {
-        if (selectedFile) selectedFile.hotSwap();
-      }
+      click: editorCommand('hotSwap')
     });
     projectMenu.append(hotSwapMenuItem);
     var projectMenuItem = new gui.MenuItem({label: 'Project', submenu: projectMenu});
