@@ -76,7 +76,7 @@
   }
 
   function updateTitle() {
-    win.title = selectedFile ? selectedFile.path || 'untitled' : 'Elm';
+    win.title = selectedFile ? (selectedFile.path || 'untitled') + (isMac ? '' : ' - Elm') : 'Elm';
   }
 
   function openWindow(path) {
