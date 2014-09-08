@@ -1,5 +1,6 @@
 var editor = null;
 var elmDocs = null;
+var output = parent.output;
 
 function compile() {
     var form = document.getElementById('inputForm');
@@ -7,7 +8,7 @@ function compile() {
 }
 
 function hotSwap() {
-    if (!top.output.runningElmModule) return compile();
+    if (!output.runningElmModule) return compile();
     var request = null;
     if (window.ActiveXObject)  { request = new ActiveXObject("Microsoft.XMLHTTP"); }
     if (window.XMLHttpRequest) { request = new XMLHttpRequest(); }
@@ -19,21 +20,21 @@ function hotSwap() {
             var top = self.parent;
             var js = result.success;
             if (js) {
-                var error = top.output.document.getElementById('ErrorMessage');
+                var error = output.document.getElementById('ErrorMessage');
                 if (error) {
                     error.parentNode.removeChild(error);
                 }
-                top.output.eval(js);
+                output.eval(js);
                 var module = js.substring(0, js.indexOf('=')).replace(/\s/g,'');
                 try {
-                    top.output.runningElmModule =
-                        top.output.runningElmModule.swap(top.output.eval(module));
+                    output.runningElmModule =
+                        output.runningElmModule.swap(output.eval(module));
                 } catch (e) {
                     result.error = e.message;
                 }
             }
             if (result.error) {
-                var error = top.output.document.getElementById('ErrorMessage');
+                var error = output.document.getElementById('ErrorMessage');
                 if (!error) {
                     error = document.createElement('div');
                     error.id = 'ErrorMessage';
@@ -45,7 +46,7 @@ function hotSwap() {
                 }
                 error.innerHTML = '<b>Hot Swap Failed</b><br/>' +
                     result.error.replace(/\n/g, '<br/>').replace(/  /g, " &nbsp;");
-                top.output.document.body.appendChild(error);
+                output.document.body.appendChild(error);
             }
         }
     };
@@ -475,6 +476,7 @@ function initAutoHotSwap() {
 }
 
 function initEditor() {
+    output.name = document.getElementById('inputForm').target = 'output-' + Date.now() + '-' + Math.random();
     // global scope editor
     editor = CodeMirror.fromTextArea(
         document.getElementById('input'),

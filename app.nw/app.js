@@ -9,16 +9,15 @@
 
   var win = gui.Window.get();
   var main = top.ElmEditorMain || win;
+
   var isMain = win.id === 1;
   var windows = isMain ? [win] : null;
   var editorWindows = isMain ? [win] : null;
 
   var isMac = process.platform === 'darwin';
-  var input = document.getElementById('input');
-  var output = top.output;
 
   var currentWin = win;
-  function focusWin(w, initDoc) {
+  function focusWin(w, init, initDoc) {
     currentWin = w;
     if (!w && !isMac) {
       process.exit(0);
@@ -27,13 +26,18 @@
       backMenuItem.enabled =
       forwardMenuItem.enabled = w && w === docWin;
       saveMenuItem.enabled =
-      saveAsMenuItem.enabled = w && w !== docWin;
+      saveAsMenuItem.enabled =
+      closeFileMenuItem.enabled =
+      closeAllFilesMenuItem.enabled =
+      nextTabMenuItem.enabled =
+      previousTabMenuItem.enabled = w && w !== docWin;
       closeMenuItem.enabled =
       showDevToolsMenuItem.enabled =
       zoomMenuItem.enabled =
       minimizeMenuItem.enabled = w;
+      updateProjectMenuItems(init ? !initDoc : w && w.window.ElmEditor && w.window.ElmEditor.getSelectedFile());
     }
-    updateFullScreenLabel(initDoc);
+    updateFullScreenLabel(init);
   }
 
   function focusOpenWin() {
@@ -44,69 +48,30 @@
     }
   }
 
-  function updateFullScreenLabel(initDoc) {
+  function updateFullScreenLabel(init) {
     if (isMac) fullScreenMenuItem.enabled = !!currentWin;
-    fullScreenMenuItem.label = !initDoc && currentWin && currentWin.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
+    fullScreenMenuItem.label = !init && currentWin && currentWin.isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen';
   }
 
-  var filePath = '';
-  var fileContents = '';
-
-  function setPath(path) {
-    filePath = path;
-    // win.title = (path || 'Untitled') + ' \u2014 Elm';
-    win.title = path || 'Untitled';
-  }
-
-  function contents() {
-    editor.save();
-    return ('\ufeff' + input.value).slice(1);
-  }
-  function setContents(contents) {
-    fileContents = contents;
-    editor.setValue(contents);
-    clearTimeout(delay);
-    if (contents) {
-      compile();
-    } else {
-      output.location = 'http://elm-lang.org/compile?input=main%20%3D%20plainText%20%22%22';
-    }
+  function updateProjectMenuItems(enable) {
+    compileMenuItem.enabled =
+    hotSwapMenuItem.enabled = !!enable;
   }
 
   function shouldClose() {
-    return fileContents === contents() || confirm('Close without saving?');
-  }
-
-  function save() {
-    var source = contents();
-    fs.writeFile(filePath, source, {encoding: 'utf-8'}, function(err) {
-      if (!err) fileContents = source;
+    return files.every(function(file) {
+      return file.shouldClose();
     });
   }
 
-  function saveAs() {
-    var dialog = document.createElement('input');
-    dialog.type = 'file';
-    dialog.accept = '.elm';
-    dialog.nwsaveas = 'untitled.elm';
-    dialog.onchange = function() {
-      setPath(dialog.files[0].path);
-      save();
-    };
-    dialog.click();
-  }
-
-  function open(path) {
-    setPath(path);
-    setTimeout(function() {
-      var data = fs.readFileSync(path, {encoding: 'utf8'});
-      setContents(data);
-    });
+  function updateTitle() {
+    win.title = selectedFile ? selectedFile.path || 'untitled' : 'Elm';
   }
 
   function openWindow(path) {
+    return new Promise(function(resolve, reject) {
       var win = gui.Window.open('main.html', {
-        title: 'Untitled',
+        title: 'Elm',
         icon: 'logo.png',
         focus: true,
         toolbar: false,
@@ -129,38 +94,45 @@
       win.once('document-start', function() {
         win.window.ElmEditorMain = main;
       });
-      if (path) {
-        win.once('loaded', function() {
-          win.window.ElmEditor.open(path);
-        });
+      win.once('loaded', function() {
+        if (path) {
+          win.window.ElmEditor.addFile(path);
+        }
+        resolve(win);
+      });
+    });
+  }
+
+  function editorCommand(name) {
+    return function() {
+      if (currentWin && currentWin.window.ElmEditor) {
+        currentWin.window.ElmEditor[name]();
       }
-      return win;
-    }
+    };
+  }
 
   top.ElmEditor = {
     openDialog: function() {
       var dialog = document.createElement('input');
       dialog.type = 'file';
       dialog.accept = '.elm';
+      dialog.multiple = true;
+      document.body.appendChild(dialog);
       dialog.onchange = function() {
-        var path = dialog.files[0].path;
-        if (contents() || filePath) {
-          openWindow(path);
-        } else {
-          open(path);
-        }
+        [].forEach.call(dialog.files, function(f) {
+          addFile(f.path);
+        });
       };
       dialog.click();
+      setTimeout(function() {
+        document.body.removeChild(dialog);
+      });
     },
     save: function() {
-      if (filePath) {
-        save();
-      } else {
-        saveAs();
-      }
+      if (selectedFile) selectedFile.save();
     },
     saveAs: function() {
-      saveAs();
+      if (selectedFile) selectedFile.saveAs();
     },
     quit: function() {
       for (var i = editorWindows.length; i--;) {
@@ -171,14 +143,46 @@
     getEditor: function() {
       return new Promise(function(resolve, reject) {
         if (currentWin && currentWin !== docWin) return resolve(currentWin);
-        if (editorWindows.length) return resolve(editorWindows[0]);
-        var w = openWindow();
-        w.once('loaded', function() {
-          resolve(w);
-        });
+        if (editorWindows.length) {
+          editorWindows[0].focus();
+          return resolve(editorWindows[0]);
+        }
+        resolve(openWindow());
       });
     },
+    close: function() {
+      if (selectedFile) {
+        closeFile(selectedFile);
+      } else {
+        win.close();
+      }
+    },
+    closeAll: function() {
+      for (var i = files.length; i--;) {
+        var f = files[i];
+        closeFile(f);
+        if (files.indexOf(f) !== -1) return;
+      }
+    },
+    selectNextFile: function() {
+      var i = files.indexOf(selectedFile);
+      if (i === -1) return;
+      selectFile(files[(i + 1) % files.length]);
+    },
+    selectPreviousFile: function() {
+      var i = files.indexOf(selectedFile);
+      if (i === -1) return;
+      selectFile(files[(i + files.length - 1) % files.length]);
+    },
+    ensureFile: function() {
+      if (!files.length) addFile();
+    },
+    getSelectedFile: function() {
+      return selectedFile;
+    },
     shouldClose: shouldClose,
+    updateProjectMenuItems: updateProjectMenuItems,
+    addFile: addFile,
     openWindow: openWindow,
     open: open,
     showDocs: showDocs
@@ -208,8 +212,7 @@
 
       var fileMenu = new gui.Menu;
       fileMenu.append(new gui.MenuItem({
-        // label: 'Close Window',
-        label: 'Close',
+        label: 'Close Window',
         key: 'W',
         modifiers: 'ctrl',
         click: function() {
@@ -240,7 +243,7 @@
     }
 
     windows.push(docWin);
-    focusWin(docWin, true);
+    focusWin(docWin, true, true);
     docWin.on('close', function() {
       docWin.hide();
       docWin.closeDevTools();
@@ -272,40 +275,6 @@
       }
     }));
   }
-
-  document.getElementById('documentation').addEventListener('click', function(e) {
-    var t = e.target;
-    while (t) {
-      if (t.tagName === 'A') {
-        if (!/^javascript:/.test(t.href)) {
-          e.preventDefault();
-          showDocs(t.href.replace(/^file:\/\//, 'http://elm-lang.org'));
-        }
-        return;
-      }
-      t = t.parentNode;
-    }
-  });
-
-  function hideCursor() {
-    editor.display.wrapper.classList.remove('CodeMirror-focused');
-  }
-  function showCursor() {
-    editor.display.wrapper.classList.add('CodeMirror-focused');
-  }
-  var editorFocused = true;
-  editor.display.input.addEventListener('blur', function() {
-    editorFocused = false;
-    hideCursor();
-  });
-  editor.display.input.addEventListener('focus', function() {
-    editorFocused = true;
-    showCursor();
-  });
-  win.on('blur', hideCursor);
-  win.on('focus', function() {
-    if (editorFocused) showCursor();
-  });
 
   if (isMain) {
     win.on('close', function() {
@@ -342,7 +311,9 @@
       key: isMac ? 'n' : 'N',
       modifiers: isMac ? 'cmd' : 'ctrl',
       click: function() {
-        main.window.ElmEditor.openWindow();
+        main.window.ElmEditor.getEditor().then(function(editor) {
+          editor.window.ElmEditor.addFile();
+        });
       }
     }));
     fileMenu.append(new gui.MenuItem({
@@ -351,6 +322,7 @@
       modifiers: isMac ? 'cmd' : 'ctrl',
       click: function() {
         main.window.ElmEditor.getEditor().then(function(editor) {
+          editor.window.ElmEditor.ensureFile();
           editor.window.ElmEditor.openDialog();
         });
       }
@@ -359,43 +331,54 @@
       label: 'Save',
       key: isMac ? 's' : 'S',
       modifiers: isMac ? 'cmd' : 'ctrl',
-      click: function() {
-        currentWin.window.ElmEditor.save();
-      }
+      click: editorCommand('save')
     });
     fileMenu.append(saveMenuItem);
     var saveAsMenuItem = new gui.MenuItem({
       label: 'Save As\u2026',
       key: 'S',
       modifiers: isMac ? 'cmd' : 'ctrl-shift',
-      click: function() {
-        currentWin.window.ElmEditor.saveAs();
-      }
+      click: editorCommand('saveAs')
     });
     fileMenu.append(saveAsMenuItem);
     fileMenu.append(new gui.MenuItem({type: 'separator'}));
-    // fileMenu.append(new gui.MenuItem({
-    //   label: 'New Window',
-    //   key: isMac ? 'n' : 'N',
-    //   modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
-    //   click: function() {
-    //     main.window.ElmEditor.openWindow();
-    //   }
-    // }));
+    var closeFileMenuItem = new gui.MenuItem({
+      label: 'Close File',
+      key: isMac ? 'w' : 'W',
+      modifiers: isMac ? 'cmd' : 'ctrl',
+      click: editorCommand('close')
+    });
+    fileMenu.append(closeFileMenuItem);
+    var closeAllFilesMenuItem = new gui.MenuItem({
+      label: 'Close All Files',
+      key: isMac ? 'w' : 'W',
+      modifiers: isMac ? 'cmd-alt' : 'ctrl-alt',
+      click: editorCommand('closeAll')
+    });
+    fileMenu.append(closeAllFilesMenuItem);
+    fileMenu.append(new gui.MenuItem({type: 'separator'}));
+    fileMenu.append(new gui.MenuItem({
+      label: 'New Window',
+      key: isMac ? 'n' : 'N',
+      modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
+      click: function() {
+        main.window.ElmEditor.openWindow().then(function(editor) {
+          editor.window.ElmEditor.addFile();
+        });
+      }
+    }));
     if (isMac) {
       var closeMenuItem = new gui.MenuItem({
-        // label: 'Close Window',
-        label: 'Close',
-        key: 'w',
+        label: 'Close Window',
+        key: 'W',
         selector: 'performClose:'
       });
       fileMenu.append(closeMenuItem);
     } else {
       fileMenu.append(new gui.MenuItem({
-        // label: 'Close Window',
-        label: 'Close',
+        label: 'Close Window',
         key: 'W',
-        modifiers: 'ctrl',
+        modifiers: 'ctrl-shift',
         click: function() {
           win.close();
         }
@@ -433,7 +416,7 @@
       key: 'H',
       enabled: false,
       modifiers: isMac ? 'cmd-shift' : 'ctrl',
-      click: toggleVerbose
+      // click: toggleVerbose
     });
     window.updateHintLabel = function(available, verbose) {
       hintMenuItem.enabled = available;
@@ -482,6 +465,18 @@
       mb.append(viewMenuItem);
     }
 
+    var nextTabMenuItem = new gui.MenuItem({
+      label: 'Select Next Tab',
+      key: isMac ? '}' : 'TAB',
+      modifiers: isMac ? 'cmd' : 'ctrl',
+      click: editorCommand('selectNextFile')
+    });
+    var previousTabMenuItem = new gui.MenuItem({
+      label: 'Select Previous Tab',
+      key: isMac ? '{' : 'TAB',
+      modifiers: isMac ? 'cmd' : 'ctrl-shift',
+      click: editorCommand('selectPreviousFile')
+    });
     if (isMac) {
       var windowMenu = mb.items[4].submenu;
       var minimizeMenuItem = windowMenu.items[0];
@@ -491,26 +486,43 @@
         selector: 'performZoom:'
       });
       windowMenu.insert(zoomMenuItem, 1);
+      windowMenu.insert(nextTabMenuItem, 3);
+      windowMenu.insert(previousTabMenuItem, 4);
+      windowMenu.insert(new gui.MenuItem({type: 'separator'}), 5);
     }
 
     var projectMenu = new gui.Menu;
-    projectMenu.append(new gui.MenuItem({
+    var compileMenuItem = new gui.MenuItem({
       label: 'Compile',
       key: isMac ? '\r' : 'ENTER',
       modifiers: isMac ? 'cmd' : 'ctrl',
-      click: compile
-    }));
-    projectMenu.append(new gui.MenuItem({
+      enabled: false,
+      click: function() {
+        if (selectedFile) selectedFile.compile();
+      }
+    });
+    projectMenu.append(compileMenuItem);
+    var hotSwapMenuItem = new gui.MenuItem({
       label: 'Hot Swap',
       key: isMac ? '\r' : 'RETURN',
       modifiers: isMac ? 'cmd-shift' : 'ctrl-shift',
-      click: hotSwap
-    }));
+      enabled: false,
+      click: function() {
+        if (selectedFile) selectedFile.hotSwap();
+      }
+    });
+    projectMenu.append(hotSwapMenuItem);
     var projectMenuItem = new gui.MenuItem({label: 'Project', submenu: projectMenu});
     if (isMac) {
       mb.insert(projectMenuItem, 4);
     } else {
       mb.append(projectMenuItem);
+    }
+
+    if (!isMac) {
+      var windowMenu = new gui.Menu;
+      windowMenu.append(nextTabMenuItem);
+      mb.append(new gui.MenuItem({label: 'Window', submenu: windowMenu}));
     }
 
     var helpMenu = new gui.Menu;
@@ -520,18 +532,225 @@
     win.menu = mb;
   }
 
+  var files = [];
+  var selectedFile;
+
+  function selectFile(file) {
+    if (selectedFile) {
+      selectedFile.tab.classList.remove('selected');
+      selectedFile.content.style.display = 'none';
+    }
+    if (selectedFile = file) {
+      file.tab.classList.add('selected');
+      file.content.style.display = 'block';
+      file.focus();
+    }
+    if (isMain || !isMac) {
+      updateProjectMenuItems(file);
+    } else {
+      main.window.ElmEditor.updateProjectMenuItems(file);
+    }
+    updateTitle();
+  }
+
+  function closeFile(file, notWindow) {
+    if (!file.shouldClose()) return;
+    var i = files.indexOf(file);
+    files.splice(i, 1);
+    tabContainer.removeChild(file.tab);
+    contentContainer.removeChild(file.content);
+    if (file === selectedFile) {
+      selectFile(files[i] || files[i - 1]);
+    }
+    if (!notWindow && isMac && !files.length) {
+      win.close();
+    }
+  }
+
+  var contentContainer = document.querySelector('.content');
+  var tabContainer = document.querySelector('.tabs');
+  function addFile(path) {
+    if (path && files.length === 1 && !files[0].path && !files[0].getContents()) {
+      closeFile(files[0], true);
+    }
+    var file = new File(path);
+    tabContainer.appendChild(file.tab);
+    contentContainer.appendChild(file.content);
+    files.push(file);
+    selectFile(file);
+    return file;
+  }
+
+  function File(path) {
+    this.tab = document.createElement('div');
+    this.tab.className = 'tab';
+
+    this.setPath(path);
+    this.fileContents = '';
+
+    this.content = document.createElement('iframe');
+    this.content.src = 'tab.html';
+    this.content.onload = function() {
+      this.window = this.content.contentWindow.input;
+      this.output = this.content.contentWindow.input.output;
+      this.input = this.window.document.getElementById('input');
+      this.editor = this.window.editor;
+
+      this.editorFocused = true;
+      this.editor.display.input.addEventListener('blur', this.onEditorFocus.bind(this));
+      this.editor.display.input.addEventListener('focus', this.onEditorBlur.bind(this));
+
+      this.window.document.getElementById('documentation').addEventListener('click', this.onDocumentationClick);
+
+      if (path) {
+        var data = fs.readFileSync(path, {encoding: 'utf8'});
+        this.setContents(data);
+      }
+    }.bind(this);
+  }
+
+  File.prototype.hideCursor = function() {
+    this.editor.display.wrapper.classList.remove('CodeMirror-focused');
+  };
+
+  File.prototype.showCursor = function() {
+    this.editor.display.wrapper.classList.add('CodeMirror-focused');
+  };
+
+  File.prototype.focus = function() {
+    if (this.editor) this.editor.focus();
+  };
+
+  File.prototype.windowFocus = function() {
+    if (this.editorFocused) this.showCursor();
+  };
+
+  File.prototype.onEditorFocus = function() {
+    this.editorFocused = false;
+    this.hideCursor();
+  };
+
+  File.prototype.onEditorBlur = function() {
+    this.editorFocused = true;
+    this.showCursor();
+  };
+
+  File.prototype.onDocumentationClick = function(e) {
+    var t = e.target;
+    while (t) {
+      if (t.tagName === 'A') {
+        if (!/^javascript:/.test(t.href)) {
+          e.preventDefault();
+          main.window.ElmEditor.showDocs(t.href.replace(/^file:\/\//, 'http://elm-lang.org'));
+        }
+        return;
+      }
+      t = t.parentNode;
+    }
+  };
+
+  File.prototype.compile = function() {
+    if (this.window.compile) this.window.compile();
+  };
+
+  File.prototype.hotSwap = function() {
+    if (this.window.hotSwap) this.window.hotSwap();
+  };
+
+  File.prototype.save = function() {
+    if (this.path) {
+      this.write();
+    } else {
+      this.saveAs();
+    }
+  };
+
+  File.prototype.saveAs = function() {
+    var dialog = document.createElement('input');
+    dialog.type = 'file';
+    dialog.accept = '.elm';
+    dialog.nwsaveas = 'untitled.elm';
+    document.body.appendChild(dialog);
+    dialog.onchange = function() {
+      this.setPath(dialog.files[0].path);
+      updateTitle();
+      this.write();
+    }.bind(this);
+    dialog.click();
+    setTimeout(function() {
+      document.body.removeChild(dialog);
+    });
+  };
+
+  File.prototype.write = function() {
+    var source = this.getContents();
+    fs.writeFile(this.path, source, {encoding: 'utf-8'}, function(err) {
+      if (!err) this.fileContents = source;
+    }.bind(this));
+  };
+
+  File.prototype.setPath = function(path) {
+    this.path = path || '';
+    this.displayName = path ? path.split('/').pop() : 'untitled';
+    this.displayPath = path || 'untitled';
+
+    this.tab.textContent = this.displayName;
+    this.tab.title = this.path;
+  };
+
+  File.prototype.shouldClose = function() {
+    return this.fileContents === this.getContents() || confirm('Close "' + this.displayName + '" without saving?');
+  };
+
+  File.prototype.getContents = function() {
+    if (!this.editor) return '';
+    this.editor.save();
+    return ('\ufeff' + this.input.value).slice(1);
+  };
+
+  File.prototype.setContents = function(contents) {
+    this.fileContents = contents;
+    this.editor.setValue(contents);
+    this.window.clearTimeout(this.window.delay);
+    if (contents) {
+      this.window.compile();
+    } else {
+      this.output.location = 'http://elm-lang.org/compile?input=main%20%3D%20plainText%20%22%22';
+    }
+  };
+
+  tabContainer.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('tab')) return;
+    var i = [].indexOf.call(tabContainer.children, e.target);
+    if (i === -1) return;
+    selectFile(files[i]);
+  });
+
   if (isMain) {
     var argv = gui.App.argv;
     if (argv.length) {
-      open(argv[0]);
+      addFile(argv[0]);
       for (var i = 1, l = argv.length; i < l; i++) {
-        openWindow(argv[i]);
+        addFile(argv[i]);
       }
+    } else {
+      addFile();
     }
 
     gui.App.on('open', function(file) {
-      openWindow(file);
+      getEditor().then(function(editor) {
+        editor.window.ElmEditor.addFile(file);
+      });
     });
   }
+
+  win.on('focus', function() {
+    if (selectedFile) selectedFile.windowFocus();
+    document.body.classList.add('focused');
+  });
+  win.on('blur', function() {
+    if (selectedFile) selectedFile.hideCursor();
+    document.body.classList.remove('focused');
+  });
 
 }());
