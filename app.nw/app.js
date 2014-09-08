@@ -5,6 +5,7 @@
   var process = top.process;
 
   var fs = require('fs');
+  var path = require('path');
   var gui = require('nw.gui');
 
   var win = gui.Window.get();
@@ -716,10 +717,10 @@
     }.bind(this));
   };
 
-  File.prototype.setPath = function(path) {
-    this.path = path || '';
-    this.displayName = path ? path.split('/').pop() : 'untitled';
-    this.displayPath = path || 'untitled';
+  File.prototype.setPath = function(p) {
+    this.path = p || '';
+    this.displayName = p ? p.split(path.sep).pop() : 'untitled';
+    this.displayPath = p || 'untitled';
 
     this.tab.textContent = this.displayName;
     this.tab.title = this.path;
