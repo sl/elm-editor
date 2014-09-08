@@ -535,6 +535,7 @@
     if (!isMac) {
       var windowMenu = new gui.Menu;
       windowMenu.append(nextTabMenuItem);
+      windowMenu.append(previousTabMenuItem);
       mb.append(new gui.MenuItem({label: 'Window', submenu: windowMenu}));
     }
 
